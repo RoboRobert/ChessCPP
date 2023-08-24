@@ -1,14 +1,14 @@
 #include<iostream>
-#include<fstream>
 #include<string>
 
 void initializeboard(std::string board[8][8]);
 void print_board(std::string board[8][8]);
 void square_to_index(std::string square, int &row, int &col);
-void index_to_square(int row, int col, std::string &square);
+std::string index_to_square(int row, int col);
 void request_move(std::string board[8][8], bool &color);
-void legal_moves(std::string movelist[100], std::string board[8][8], int row, int col, std::string piece);
+void legal_moves(std::string movelist[64], std::string board[8][8], int row, int col, std::string piece);
 void move_piece(std::string board[8][8], std::string start_square, std::string end_square);
+bool parse_move(std::string move, bool color, std::string &piece, std::string &move_square);
 bool make_move(std::string board[8][8], std::string move, bool color);
 
 void initializeboard(std::string board[8][8]) {
@@ -63,11 +63,13 @@ void print_board(std::string board[8][8]) {
     std::cout << std::endl;
     std::cout << std::endl;
     for(int i = 0; i < 8; i++) {
+        std::cout << 8-i << " ";
         for(int j = 0; j < 8; j++) {
             std::cout << board[i][j] << " ";
         }
         std::cout << std::endl;
     }
+    std::cout << "  A  B  C  D  E  F  G  H" << std::endl;
 }
 
 void square_to_index(std::string square, int &row, int &col) {
@@ -312,7 +314,7 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
-        //Below and to the right
+        //Down and to the right
         legal_move = true;
         rowIndex = row + 2;
         colIndex = col + 1;
@@ -325,7 +327,7 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
-        //Below and to the left
+        //Down and to the left
         legal_move = true;
         rowIndex = row + 2;
         colIndex = col - 1;
@@ -518,19 +520,64 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
-
         return;
     }
 
     if(piece.at(1) == 'P') {
-        rowIndex = row;
-        colIndex = col;
+        //Moves for white pawns
+        if(color == 'W') {
+            legal_move = true;
+            rowIndex = row;
+            colIndex = col;
+            if(board[rowIndex - 1][colIndex] != "[]") {
+                legal_move = false;
+            }
 
-        if(color == 'W' && row == 6)
-            movelist[index] = index_to_square(rowIndex + 2, colIndex);
-        
-        if(color == 'B' && row == 1)
-            movelist[index] = index_to_square(rowIndex - 2, colIndex);
+            if(legal_move) {
+                movelist[index] = index_to_square(rowIndex - 1, colIndex);
+                index++;
+            }
+
+            if(legal_move && rowIndex == 6) {
+                if(board[rowIndex - 2][colIndex] != "[]") {
+                    legal_move = false;
+                }
+
+                if(legal_move) {
+                    movelist[index] = index_to_square(rowIndex - 2, colIndex);
+                    index++;
+                }
+            }
+        }
+
+        //Moves for black pawns
+        if(color == 'B') {
+            legal_move = true;
+            rowIndex = row;
+            colIndex = col;
+            if(board[rowIndex + 1][colIndex] != "[]") {
+                legal_move = false;
+            }
+
+            if(legal_move) {
+                movelist[index] = index_to_square(rowIndex + 1, colIndex);
+                index++;
+            }
+                
+            if(legal_move && rowIndex == 1) {
+                if(board[rowIndex + 2][colIndex] != "[]") {
+                    legal_move = false;
+                }
+                
+                if(legal_move) {
+                    movelist[index] = index_to_square(rowIndex + 2, colIndex);
+                    index++;
+                }
+                    
+            }
+        }
+
+        return;
     }
 
     return;
@@ -552,12 +599,7 @@ void move_piece(std::string board[8][8], std::string start_square, std::string e
     return;
 }
 
-bool make_move(std::string board[8][8], std::string move, bool color) {
-    std::string piece = "";
-    std::string movesquare = "  ";
-
-    std::string movelist[64] = {""};
-
+bool parse_move(std::string move, bool color, std::string &piece, std::string &move_square) {
     if(move.length() > 6) {
         return false;
     }
@@ -568,12 +610,19 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     else piece = "B";
     piece.append(move.substr(0, 1));
 
-    std::cout << "Piece: " << piece << std::endl;
+    move_square.at(0) = toupper(move.at(1));
+    move_square.at(1) = move.at(2);
 
-    movesquare.at(0) = toupper(move.at(1));
-    movesquare.at(1) = move.at(2);
+    return true;
+}
 
-    std::cout << "Square: " << movesquare << std::endl;
+bool make_move(std::string board[8][8], std::string move, bool color) {
+    std::string piece = "";
+    std::string movesquare = "  ";
+
+    parse_move(move, color, piece, movesquare);
+
+    std::string movelist[64] = {""};
 
     int row = 0;
     int col = 0;
@@ -594,13 +643,13 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     }
 
     if(row == 8 || col == 8) {
-        std::cout << "Piece not found!" << std::endl;
         return false;
     }
-    std::cout << "Found the piece at" << row << col << std::endl;
 
+    //Stores a list of legal moves in movelist
     legal_moves(movelist, board, row, col, piece);
 
+    //Prints out the list of legal moves
     std::cout << "Legal moves: ";
     for(int i = 0; i < 64; i++) {
         if(movelist[i] == "") {
