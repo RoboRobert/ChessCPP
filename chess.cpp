@@ -2,13 +2,6 @@
 #include<fstream>
 #include<string>
 
-// class piece {
-//     public:
-//     int color = 0;
-//     std::string name = "[]";
-//     std::string square = "A1";
-// };
-
 void initializeboard(std::string board[8][8]);
 void print_board(std::string board[8][8]);
 void square_to_index(std::string square, int &row, int &col);
@@ -125,6 +118,8 @@ void request_move(std::string board[8][8], bool &color) {
 void legal_moves(std::string movelist[64], std::string board[8][8], int row, int col, std::string piece) {
     int index = 0;
 
+    bool legal_move = true;
+
     char color = piece.at(0);
 
     int rowIndex = 0;
@@ -140,9 +135,15 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             }
             for(colIndex = col - 1; colIndex <= col + 1; colIndex++) {
                 std::cout << "Col: " << colIndex << std::endl;
+
+                //Makes sure the indices are within the correct bounds
                 if((rowIndex == row && colIndex == col) || colIndex < 0 || colIndex > 7) {
                     continue;
                 }
+
+                //If the color of the piece on the square to be moved to is the same, don't add the move.
+                if(board[rowIndex][colIndex].at(0) == color)
+                    continue;
                 
                 movelist[index] = index_to_square(rowIndex, colIndex);
                 index++;
@@ -154,23 +155,49 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
 
     //Find moves for queens
     if(piece.at(1) == 'Q') {
-        //Vertical moves from the left of the board to the right, not including the square the queen is on.
+        //Vertical moves from current square to the top, not including the square the queen is on.
         rowIndex = row;
         colIndex = col;
-        for(rowIndex = 0; rowIndex <= 7; rowIndex++) {
-            if(rowIndex == row)
-                continue;
+        for(rowIndex = row + 1; rowIndex <= 7; rowIndex++) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
 
-        //Horizontal moves from the top of the board to the bottom, not including the square the queen is on.
+        //Vertical moves from current square to the bottom, not including the square the queen is on.
         rowIndex = row;
         colIndex = col;
-        for(colIndex = 0; colIndex <= 7; colIndex++) {
-            if(colIndex == col)
-                continue;
+        for(rowIndex = row - 1; rowIndex >= 0; rowIndex--) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
+            movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
+        }
+
+        //Horizontal moves from current square to the right, not including the square the queen is on.
+        rowIndex = row;
+        colIndex = col;
+        for(colIndex = col + 1; colIndex <= 7; colIndex++) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
+            movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
+        }
+
+        //Horizontal moves from current square to the left, not including the square the queen is on.
+        rowIndex = row;
+        colIndex = col;
+        for(colIndex = col - 1; colIndex >= 0; colIndex--) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
@@ -184,6 +211,10 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(colIndex < 0 || colIndex > 7)
                 break;
             if(rowIndex < 0 || rowIndex > 7)
+                break;
+
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
                 break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
@@ -201,6 +232,10 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(rowIndex < 0 || rowIndex > 7)
                 break;
 
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -214,6 +249,10 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(colIndex < 0 || colIndex > 7)
                 break;
             if(rowIndex < 0 || rowIndex > 7)
+                break;
+
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
                 break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
@@ -231,6 +270,10 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(rowIndex < 0 || rowIndex > 7)
                 break;
 
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -244,58 +287,106 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
         colIndex = col;
 
         //Above and to the right
+        legal_move = true;
         rowIndex = row - 2;
         colIndex = col + 1;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //Above and to the left
+        legal_move = true;
         rowIndex = row - 2;
         colIndex = col - 1;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //Below and to the right
+        legal_move = true;
         rowIndex = row + 2;
         colIndex = col + 1;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //Below and to the left
+        legal_move = true;
         rowIndex = row + 2;
         colIndex = col - 1;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //To the left and up
+        legal_move = true;
         rowIndex = row - 1;
         colIndex = col - 2;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //To the left and down
+        legal_move = true;
         rowIndex = row + 1;
         colIndex = col - 2;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //To the right and up
+        legal_move = true;
         rowIndex = row - 1;
         colIndex = col + 2;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
         //To the right and down
+        legal_move = true;
         rowIndex = row + 1;
         colIndex = col + 2;
-        if((colIndex >= 0 && colIndex <= 7) && (rowIndex >= 0 && rowIndex <= 7)) {
+        if((colIndex < 0 || colIndex > 7) || (rowIndex < 0 || rowIndex > 7))
+            legal_move = false;
+        //If the color of the piece on the square to be moved to is the same, don't add the move.
+        if(legal_move && board[rowIndex][colIndex].at(0) == color)
+            legal_move = false;
+        if(legal_move) {
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -315,6 +406,9 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(rowIndex < 0 || rowIndex > 7)
                 break;
 
+            if(board[rowIndex][colIndex].at(0) == color)
+                break; 
+
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -329,6 +423,9 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
                 break;
             if(rowIndex < 0 || rowIndex > 7)
                 break;
+
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;                 
 
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
@@ -345,6 +442,9 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(rowIndex < 0 || rowIndex > 7)
                 break;
 
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;                 
+
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -360,6 +460,9 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             if(rowIndex < 0 || rowIndex > 7)
                 break;
 
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;                 
+
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
@@ -368,23 +471,49 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
 
     //Find moves for rooks
     if(piece.at(1) == 'R') {
-        //Vertical moves from the left of the board to the right, not including the square the rook is on.
+        //Vertical moves from current square to the top, not including the square the queen is on.
         rowIndex = row;
         colIndex = col;
-        for(rowIndex = 0; rowIndex <= 7; rowIndex++) {
-            if(rowIndex == row)
-                continue;
+        for(rowIndex = row + 1; rowIndex <= 7; rowIndex++) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
         }
 
-        //Horizontal moves from the top of the board to the bottom, not including the square the rook is on.
+        //Vertical moves from current square to the bottom, not including the square the queen is on.
         rowIndex = row;
         colIndex = col;
-        for(colIndex = 0; colIndex <= 7; colIndex++) {
-            if(colIndex == col)
-                continue;
+        for(rowIndex = row - 1; rowIndex >= 0; rowIndex--) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
+            movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
+        }
+
+        //Horizontal moves from current square to the right, not including the square the queen is on.
+        rowIndex = row;
+        colIndex = col;
+        for(colIndex = col + 1; colIndex <= 7; colIndex++) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
+
+            movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
+        }
+
+        //Horizontal moves from current square to the left, not including the square the queen is on.
+        rowIndex = row;
+        colIndex = col;
+        for(colIndex = col - 1; colIndex >= 0; colIndex--) {
+            //If the color of the piece on the square to be moved to is the same, don't add the move.
+            if(board[rowIndex][colIndex].at(0) == color)
+                break;
 
             movelist[index] = index_to_square(rowIndex, colIndex);
             index++;
@@ -394,7 +523,14 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
     }
 
     if(piece.at(1) == 'P') {
+        rowIndex = row;
+        colIndex = col;
 
+        if(color == 'W' && row == 6)
+            movelist[index] = index_to_square(rowIndex + 2, colIndex);
+        
+        if(color == 'B' && row == 1)
+            movelist[index] = index_to_square(rowIndex - 2, colIndex);
     }
 
     return;
