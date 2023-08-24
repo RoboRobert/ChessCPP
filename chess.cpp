@@ -606,9 +606,9 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
 
     //This block sets the color of the piece, and then appends the type.
     if(color) 
-        piece = "W";
-    else piece = "B";
-    piece.append(move.substr(0, 1));
+        piece = "W ";
+    else piece = "B ";
+    piece.at(1) = toupper(move.at(0));
 
     move_square.at(0) = toupper(move.at(1));
     move_square.at(1) = move.at(2);
@@ -620,50 +620,60 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     std::string piece = "";
     std::string movesquare = "  ";
 
+    bool move_found;
     parse_move(move, color, piece, movesquare);
 
     std::string movelist[64] = {""};
 
     int row = 0;
     int col = 0;
+    int previousrow = 0; // These variables are used to track where the previous search found a piece
+    int previouscol = 0; // and then start searching after that.
+    move_found = false;
+    while(!move_found) {
+        for(row = previousrow; row < 8; row++) {
+            for(col = previouscol; col < 8; col++) {
+                if(board[row][col] == piece) {
+                    break;
+                }
+            }
+            //Since col continues to count up through 8, this resets it to 7.
+            if(col == 8)
+                col = 7;
 
-    for(row = 0; row < 8; row++) {
-        for(col = 0; col < 8; col++) {
             if(board[row][col] == piece) {
                 break;
             }
         }
-        //Since col continues to count up through 8, this resets it to 7.
-        if(col == 8)
-            col = 7;
 
-        if(board[row][col] == piece) {
-            break;
+        if(row >= 8 || col >= 8) {
+            std::cout << "Invalid move!" << std::endl;
+            return false;
         }
-    }
 
-    if(row == 8 || col == 8) {
-        return false;
-    }
+        previousrow = row;
+        previouscol = col + 1;
 
-    //Stores a list of legal moves in movelist
-    legal_moves(movelist, board, row, col, piece);
+        //Stores a list of legal moves in movelist
+        legal_moves(movelist, board, row, col, piece);
 
-    //Prints out the list of legal moves
-    std::cout << "Legal moves: ";
-    for(int i = 0; i < 64; i++) {
-        if(movelist[i] == "") {
-            std::cout << std::endl;
-            break;
+        //Prints out the list of legal moves
+        std::cout << "Legal moves: ";
+        for(int i = 0; i < 64; i++) {
+            if(movelist[i] == "") {
+                std::cout << std::endl;
+                break;
+            }
+            std::cout << movelist[i] << " ";
         }
-        std::cout << movelist[i] << " ";
-    }
 
-    for(int i = 0; i < 64; i++) {
-        if(movelist[i] == movesquare) {
-            move_piece(board, index_to_square(row, col), movesquare);
-            std::cout << "Valid move!" << std::endl;
-            return true;
+        for(int i = 0; i < 64; i++) {
+            if(movelist[i] == movesquare) {
+                move_piece(board, index_to_square(row, col), movesquare);
+                std::cout << "Valid move!" << std::endl;
+                move_found = true;
+                return true;
+            }
         }
     }
 
