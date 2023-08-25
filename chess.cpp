@@ -614,7 +614,6 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
     else piece = "B ";
 
     if(isdigit(move.at(1))) {
-        std::cout << "It's a digit!" << std::endl;
         piece.at(1) = 'P';
         move_square.at(0) = toupper(move.at(0));
         move_square.at(1) = move.at(1);
@@ -642,24 +641,27 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     std::string movelist[64] = {""};
 
     int row = 0;
-    int col = 0;
-    int previousrow = 0; // These variables are used to track where the previous search found a piece
-    int previouscol = 0; // and then start searching after that.
+    int col = -1;
     move_found = false;
     while(!move_found) {
-        for(row = previousrow; row < 8; row++) {
-            for(col = previouscol; col < 8; col++) {
+        col = col + 1;
+        if(col == 8) {
+            col = 0;
+            row++;
+        }
+        for(row = row; row < 8; row++) {
+            while(col < 7) {
+                // std::cout << "Row: " << row << " Col: " << col << std::endl;
                 if(board[row][col] == piece) {
                     break;
                 }
+                col++;
             }
-            //Since col continues to count up through 8, this resets it to 7.
-            if(col == 8)
-                col = 7;
-
+            // std::cout << "Row: " << row << " Col: " << col << std::endl;
             if(board[row][col] == piece) {
                 break;
             }
+            col = 0;
         }
 
         std::cout << "Row: " << row << " Col: " << col << std::endl;
@@ -667,13 +669,6 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
         if(row >= 8 || col >= 8) {
             std::cout << "Invalid move!" << std::endl;
             return false;
-        }
-
-        previousrow = row;
-        previouscol = col + 1;
-        if(previouscol == 8) {
-            previousrow++;
-            previouscol = 0;
         }
 
         //Stores a list of legal moves in movelist
