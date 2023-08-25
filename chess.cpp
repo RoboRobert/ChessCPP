@@ -539,6 +539,16 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
                 index++;
             }
 
+            if(legal_move && (colIndex-1 >= 0) && (board[rowIndex - 1][colIndex - 1].at(0) != 'W' && board[rowIndex - 1][colIndex - 1] != "[]")) {
+                movelist[index] = index_to_square(rowIndex - 1, colIndex - 1);
+                index++;
+            }
+
+            if(legal_move && (colIndex + 1 <= 7) && (board[rowIndex - 1][colIndex + 1].at(0) != 'W' && board[rowIndex + 1][colIndex + 1] != "[]")) {
+                movelist[index] = index_to_square(rowIndex - 1, colIndex + 1);
+                index++;
+            }
+
             if(legal_move && rowIndex == 6) {
                 if(board[rowIndex - 2][colIndex] != "[]") {
                     legal_move = false;
@@ -558,6 +568,16 @@ void legal_moves(std::string movelist[64], std::string board[8][8], int row, int
             colIndex = col;
             if(board[rowIndex + 1][colIndex] != "[]") {
                 legal_move = false;
+            }
+
+            if(legal_move && (colIndex-1 >= 0) && (board[rowIndex + 1][colIndex - 1].at(0) != 'B' && board[rowIndex + 1][colIndex - 1] != "[]")) {
+                movelist[index] = index_to_square(rowIndex + 1, colIndex - 1);
+                index++;
+            }
+
+            if(legal_move && (colIndex + 1 <= 7) && (board[rowIndex + 1][colIndex + 1].at(0) != 'B' && board[rowIndex + 1][colIndex + 1] != "[]")) {
+                movelist[index] = index_to_square(rowIndex + 1, colIndex + 1);
+                index++;
             }
 
             if(legal_move) {
