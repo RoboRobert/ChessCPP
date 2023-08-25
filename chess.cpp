@@ -1,5 +1,6 @@
 #include<iostream>
 #include<string>
+#include <ctype.h>
 
 void initializeboard(std::string board[8][8]);
 void print_board(std::string board[8][8]);
@@ -603,15 +604,26 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
     if(move.length() > 6) {
         return false;
     }
+    if(move.length() < 2) {
+        return false;
+    }
 
     //This block sets the color of the piece, and then appends the type.
     if(color) 
         piece = "W ";
     else piece = "B ";
-    piece.at(1) = toupper(move.at(0));
 
-    move_square.at(0) = toupper(move.at(1));
-    move_square.at(1) = move.at(2);
+    if(isdigit(move.at(1))) {
+        std::cout << "It's a digit!" << std::endl;
+        piece.at(1) = 'P';
+        move_square.at(0) = toupper(move.at(0));
+        move_square.at(1) = move.at(1);
+    }
+    else {
+        piece.at(1) = toupper(move.at(0));
+        move_square.at(0) = toupper(move.at(1));
+        move_square.at(1) = move.at(2);
+    }
 
     return true;
 }
@@ -621,8 +633,12 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     std::string movesquare = "  ";
 
     bool move_found;
-    parse_move(move, color, piece, movesquare);
 
+    if(!parse_move(move, color, piece, movesquare)) {
+        std::cout << "Invalid move!" << std::endl;
+        return false;
+    }
+        
     std::string movelist[64] = {""};
 
     int row = 0;
@@ -646,6 +662,8 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
             }
         }
 
+        std::cout << "Row: " << row << " Col: " << col << std::endl;
+
         if(row >= 8 || col >= 8) {
             std::cout << "Invalid move!" << std::endl;
             return false;
@@ -653,11 +671,15 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
 
         previousrow = row;
         previouscol = col + 1;
+        if(previouscol == 8) {
+            previousrow++;
+            previouscol = 0;
+        }
 
         //Stores a list of legal moves in movelist
         legal_moves(movelist, board, row, col, piece);
 
-        //Prints out the list of legal moves
+        // Prints out the list of legal moves
         std::cout << "Legal moves: ";
         for(int i = 0; i < 64; i++) {
             if(movelist[i] == "") {
