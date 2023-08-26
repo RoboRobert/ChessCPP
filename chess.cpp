@@ -7,11 +7,11 @@ void print_board(std::string board[8][8]);
 void square_to_index(std::string square, int &row, int &col);
 std::string index_to_square(int row, int col);
 void request_move(std::string board[8][8], bool &color);
-void horizontal_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece);
-void vertical_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece);
-void diagonal_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece);
-void knight_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece);
-void piece_legal_moves(std::string movelist[64], std::string board[8][8], int row, int col, std::string piece);
+void horizontal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
+void vertical_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
+void diagonal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
+void knight_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
+void piece_simple_moves(std::string *movelist, int &index, std::string board[8][8], int row, int col, std::string piece);
 void move_piece(std::string board[8][8], std::string start_square, std::string end_square);
 bool parse_move(std::string move, bool color, std::string &piece, std::string &move_square);
 bool make_move(std::string board[8][8], std::string move, bool color);
@@ -117,12 +117,51 @@ void request_move(std::string board[8][8], bool &color) {
 
     color = !color;
 
-    std::cout << "Your move is " << move << std::endl;
-
     return;
 }
 
-void horizontal_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece) {
+bool king_in_check(std::string board[8][8], char color) {
+    std::string potential_moves[256] = {""};
+
+    int index = 0;
+    int row, col;
+
+    std::string king_piece = " K";
+    king_piece.at(0) = color;
+
+    std::string king_square;
+
+    for(row = 0; row < 8; row++) {
+        for(col = 0; col < 8; col++) {
+            if(board[row][col] == king_piece) {
+                king_square = index_to_square(row, col);
+                continue;
+            }
+
+            if(board[row][col] == "[]")
+                continue;
+
+            if(board[row][col].at(0) == color)
+                continue;
+
+            piece_simple_moves(potential_moves, index, board, row, col, board[row][col]);
+        }
+    }
+
+    int i = 0;
+    while(potential_moves[i] != "") {
+        if(potential_moves[i] == king_square) {
+            return true;
+        }
+        i++;
+        if(i > 256)
+            break;
+    }
+
+    return false;
+}
+
+void horizontal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -146,6 +185,7 @@ void horizontal_moves(std::string board[8][8], std::string movelist[64], int &in
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -164,6 +204,7 @@ void horizontal_moves(std::string board[8][8], std::string movelist[64], int &in
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -174,7 +215,7 @@ void horizontal_moves(std::string board[8][8], std::string movelist[64], int &in
     return;
 }
 
-void vertical_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece) {
+void vertical_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -198,6 +239,7 @@ void vertical_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -216,6 +258,7 @@ void vertical_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -226,7 +269,7 @@ void vertical_moves(std::string board[8][8], std::string movelist[64], int &inde
     return;
 }
 
-void diagonal_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece) {
+void diagonal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -256,6 +299,7 @@ void diagonal_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -281,6 +325,7 @@ void diagonal_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -306,6 +351,7 @@ void diagonal_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
             
@@ -331,6 +377,7 @@ void diagonal_moves(std::string board[8][8], std::string movelist[64], int &inde
         //If the color of the piece on the square to be moved to is different add the move and break.
         if(isalpha(board[rowIndex][colIndex].at(0)) && board[rowIndex][colIndex].at(0) != color) {
             movelist[index] = index_to_square(rowIndex, colIndex);
+            index++;
             break;
         }
 
@@ -341,7 +388,7 @@ void diagonal_moves(std::string board[8][8], std::string movelist[64], int &inde
     return;
 }
 
-void knight_moves(std::string board[8][8], std::string movelist[64], int &index, int row, int col, std::string piece) {
+void knight_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -462,9 +509,7 @@ void knight_moves(std::string board[8][8], std::string movelist[64], int &index,
     return;
 }
 
-void piece_legal_moves(std::string movelist[64], std::string board[8][8], int row, int col, std::string piece) {
-    int index = 0;
-
+void piece_simple_moves(std::string *movelist, int &index, std::string board[8][8], int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -476,13 +521,10 @@ void piece_legal_moves(std::string movelist[64], std::string board[8][8], int ro
     //Find moves for the king
     if(piece.at(1) == 'K') {
         for(rowIndex = row - 1; rowIndex <= row + 1; rowIndex++) {
-            std::cout << "Row: " << rowIndex << std::endl;
             if(rowIndex < 0 || rowIndex > 7) {
                 continue;
             }
             for(colIndex = col - 1; colIndex <= col + 1; colIndex++) {
-                std::cout << "Col: " << colIndex << std::endl;
-
                 //Makes sure the indices are within the correct bounds
                 if((rowIndex == row && colIndex == col) || colIndex < 0 || colIndex > 7) {
                     continue;
@@ -603,7 +645,6 @@ void piece_legal_moves(std::string movelist[64], std::string board[8][8], int ro
                     movelist[index] = index_to_square(rowIndex + 2, colIndex);
                     index++;
                 }
-                    
             }
         }
 
@@ -657,7 +698,15 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
 }
 
 bool make_move(std::string board[8][8], std::string move, bool color) {
+    int index = 0;
+
+    char color_char;
+    if(color == true)
+        color_char = 'W';
+    else color_char = 'B';
+
     std::string piece = "";
+    std::string stored_piece = "";
     std::string movesquare = "  ";
 
     bool move_found;
@@ -693,7 +742,7 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
             col = 0;
         }
 
-        std::cout << "Row: " << row << " Col: " << col << std::endl;
+        // std::cout << "Row: " << row << " Col: " << col << std::endl;
 
         if(row >= 8 || col >= 8) {
             std::cout << "Invalid move!" << std::endl;
@@ -701,7 +750,7 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
         }
 
         //Stores a list of legal moves in movelist
-        piece_legal_moves(movelist, board, row, col, piece);
+        piece_simple_moves(movelist, index, board, row, col, piece);
 
         // Prints out the list of legal moves
         std::cout << "Legal moves: ";
@@ -713,10 +762,31 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
             std::cout << movelist[i] << " ";
         }
 
+        int testrow = 0;
+        int testcol = 0;
         for(int i = 0; i < 64; i++) {
             if(movelist[i] == movesquare) {
+                //Tests if this move would put the current king in check.
+                square_to_index(movesquare, testrow, testcol);
+                stored_piece = board[testrow][testcol];
+                board[row][col] = "[]";
+                board[testrow][testcol] = piece;
+                if(king_in_check(board, color_char)) {
+                    board[row][col] = piece;
+                    board[testrow][testcol] = stored_piece;
+                    std::cout << "Invalid move because the " << color_char  << " king would be in check!" << std::endl;
+                    return false;
+                }
+
+                //If the previous test passes, replaces the piece.
+                board[row][col] = piece;
+                board[testrow][testcol] = stored_piece;
+
+                //If the current king is not in check, makes the move.
                 move_piece(board, index_to_square(row, col), movesquare);
-                std::cout << "Valid move!" << std::endl;
+                
+                // std::cout << "Valid move!" << std::endl;
+                
                 move_found = true;
                 return true;
             }
