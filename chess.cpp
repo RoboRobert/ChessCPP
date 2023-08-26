@@ -2,21 +2,29 @@
 #include<string>
 #include <ctype.h>
 
-void initializeboard(std::string board[8][8]);
-void print_board(std::string board[8][8]);
+void initializeboard();
+void print_board();
 void square_to_index(std::string square, int &row, int &col);
 std::string index_to_square(int row, int col);
-void request_move(std::string board[8][8], bool &color);
-void horizontal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
-void vertical_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
-void diagonal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
-void knight_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece);
-void piece_simple_moves(std::string *movelist, int &index, std::string board[8][8], int row, int col, std::string piece);
-void move_piece(std::string board[8][8], std::string start_square, std::string end_square);
+void request_move(bool &color);
+bool king_in_check(char color);
+void horizontal_moves(std::string *movelist, int &index, int row, int col, std::string piece);
+void vertical_moves(std::string *movelist, int &index, int row, int col, std::string piece);
+void diagonal_moves(std::string *movelist, int &index, int row, int col, std::string piece);
+void knight_moves(std::string *movelist, int &index, int row, int col, std::string piece);
+void piece_simple_moves(std::string *movelist, int &index, int row, int col, std::string piece);
+void move_piece(std::string start_square, std::string end_square);
 bool parse_move(std::string move, bool color, std::string &piece, std::string &move_square);
-bool make_move(std::string board[8][8], std::string move, bool color);
+bool test_move(std::string piece, std::string from_square, std::string to_square);
+bool make_move(std::string move, bool color);
 
-void initializeboard(std::string board[8][8]) {
+std::string board[8][8] = {""};
+std::string en_passantable_pawn = "";
+
+bool white_castling_rights[2] = {true, true};
+bool black_castling_rights[2] = {true, true};
+
+void initializeboard() {
     //Black rooks
     board[0][0] = "BR";
     board[0][7] = "BR";
@@ -64,7 +72,7 @@ void initializeboard(std::string board[8][8]) {
     }
 }
 
-void print_board(std::string board[8][8]) {
+void print_board() {
     std::cout << std::endl;
     std::cout << std::endl;
     for(int i = 0; i < 8; i++) {
@@ -96,13 +104,13 @@ std::string index_to_square(int row, int col) {
     return square;
 }
 
-void request_move(std::string board[8][8], bool &color) {
+void request_move(bool &color) {
     std::string move;
 
     bool found_move = false;
 
     while(!found_move) {
-        print_board(board);
+        print_board();
         if(color == 1) {
             std::cout << "Enter a move for white: ";
         }
@@ -112,7 +120,7 @@ void request_move(std::string board[8][8], bool &color) {
 
         std::cin >> move;
 
-        found_move = make_move(board, move, color);
+        found_move = make_move(move, color);
     }
 
     color = !color;
@@ -120,7 +128,7 @@ void request_move(std::string board[8][8], bool &color) {
     return;
 }
 
-bool king_in_check(std::string board[8][8], char color) {
+bool king_in_check(char color) {
     std::string potential_moves[256] = {""};
 
     int index = 0;
@@ -144,7 +152,7 @@ bool king_in_check(std::string board[8][8], char color) {
             if(board[row][col].at(0) == color)
                 continue;
 
-            piece_simple_moves(potential_moves, index, board, row, col, board[row][col]);
+            piece_simple_moves(potential_moves, index, row, col, board[row][col]);
         }
     }
 
@@ -161,7 +169,7 @@ bool king_in_check(std::string board[8][8], char color) {
     return false;
 }
 
-void horizontal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
+void horizontal_moves(std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -215,7 +223,7 @@ void horizontal_moves(std::string board[8][8], std::string *movelist, int &index
     return;
 }
 
-void vertical_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
+void vertical_moves(std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -269,7 +277,7 @@ void vertical_moves(std::string board[8][8], std::string *movelist, int &index, 
     return;
 }
 
-void diagonal_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
+void diagonal_moves(std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -388,7 +396,7 @@ void diagonal_moves(std::string board[8][8], std::string *movelist, int &index, 
     return;
 }
 
-void knight_moves(std::string board[8][8], std::string *movelist, int &index, int row, int col, std::string piece) {
+void knight_moves(std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -509,7 +517,7 @@ void knight_moves(std::string board[8][8], std::string *movelist, int &index, in
     return;
 }
 
-void piece_simple_moves(std::string *movelist, int &index, std::string board[8][8], int row, int col, std::string piece) {
+void piece_simple_moves(std::string *movelist, int &index, int row, int col, std::string piece) {
     bool legal_move = true;
 
     char color = piece.at(0);
@@ -544,31 +552,31 @@ void piece_simple_moves(std::string *movelist, int &index, std::string board[8][
 
     //Find moves for queens
     if(piece.at(1) == 'Q') {
-        horizontal_moves(board, movelist, index, row, col, piece);
-        vertical_moves(board, movelist, index, row, col, piece);
-        diagonal_moves(board, movelist, index, row, col, piece);
+        horizontal_moves(movelist, index, row, col, piece);
+        vertical_moves(movelist, index, row, col, piece);
+        diagonal_moves(movelist, index, row, col, piece);
 
         return;
     }
 
     //Find moves for knights
     if(piece.at(1) == 'N') {
-        knight_moves(board, movelist, index, row, col, piece);
+        knight_moves(movelist, index, row, col, piece);
 
         return;
     }
 
     //Find moves for bishops
     if(piece.at(1) == 'B') {
-        diagonal_moves(board, movelist, index, row, col, piece);
+        diagonal_moves(movelist, index, row, col, piece);
 
         return;
     }
 
     //Find moves for rooks
     if(piece.at(1) == 'R') {
-        horizontal_moves(board, movelist, index, row, col, piece);
-        vertical_moves(board, movelist, index, row, col, piece);
+        horizontal_moves(movelist, index, row, col, piece);
+        vertical_moves(movelist, index, row, col, piece);
         
         return;
     }
@@ -654,7 +662,7 @@ void piece_simple_moves(std::string *movelist, int &index, std::string board[8][
     return;
 }
 
-void move_piece(std::string board[8][8], std::string start_square, std::string end_square) {
+void move_piece(std::string start_square, std::string end_square) {
     int row1;
     int col1;
 
@@ -688,6 +696,7 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
         move_square.at(0) = toupper(move.at(0));
         move_square.at(1) = move.at(1);
     }
+    // else if(move == "O-O")
     else {
         piece.at(1) = toupper(move.at(0));
         move_square.at(0) = toupper(move.at(1));
@@ -697,7 +706,33 @@ bool parse_move(std::string move, bool color, std::string &piece, std::string &m
     return true;
 }
 
-bool make_move(std::string board[8][8], std::string move, bool color) {
+bool test_move(std::string piece, std::string from_square, std::string to_square) {
+    int row, col, testrow, testcol;
+
+    std::string stored_piece;
+    char color = piece.at(0);
+
+    //Tests if this move would put the current king in check.
+    square_to_index(from_square, row, col);
+    square_to_index(to_square, testrow, testcol);
+
+    stored_piece = board[testrow][testcol];
+    move_piece(from_square, to_square);
+    if(king_in_check(color)) {
+        board[row][col] = piece;
+        board[testrow][testcol] = stored_piece;
+        std::cout << "Invalid move because the " << color  << " king would be in check!" << std::endl;
+        return false;
+    }
+
+    //If the previous test passes, replaces the piece.
+    board[row][col] = piece;
+    board[testrow][testcol] = stored_piece;
+
+    return true;
+}
+
+bool make_move(std::string move, bool color) {
     int index = 0;
 
     char color_char;
@@ -712,12 +747,10 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
     bool move_found;
 
     if(!parse_move(move, color, piece, movesquare)) {
-        std::cout << "Invalid move!" << std::endl;
+        std::cout << "Invalid move! Please use proper chess notation!" << std::endl;
         return false;
     }
         
-    std::string movelist[64] = {""};
-
     int row = 0;
     int col = -1;
     move_found = false;
@@ -750,40 +783,27 @@ bool make_move(std::string board[8][8], std::string move, bool color) {
         }
 
         //Stores a list of legal moves in movelist
-        piece_simple_moves(movelist, index, board, row, col, piece);
+        std::string movelist[64] = {""};
+        piece_simple_moves(movelist, index, row, col, piece);
 
         // Prints out the list of legal moves
-        std::cout << "Legal moves: ";
-        for(int i = 0; i < 64; i++) {
-            if(movelist[i] == "") {
-                std::cout << std::endl;
-                break;
-            }
-            std::cout << movelist[i] << " ";
-        }
+        // std::cout << "Legal moves: ";
+        // for(int i = 0; i < 64; i++) {
+        //     if(movelist[i] == "") {
+        //         std::cout << std::endl;
+        //         break;
+        //     }
+        //     std::cout << movelist[i] << " ";
+        // }
 
-        int testrow = 0;
-        int testcol = 0;
         for(int i = 0; i < 64; i++) {
             if(movelist[i] == movesquare) {
-                //Tests if this move would put the current king in check.
-                square_to_index(movesquare, testrow, testcol);
-                stored_piece = board[testrow][testcol];
-                board[row][col] = "[]";
-                board[testrow][testcol] = piece;
-                if(king_in_check(board, color_char)) {
-                    board[row][col] = piece;
-                    board[testrow][testcol] = stored_piece;
-                    std::cout << "Invalid move because the " << color_char  << " king would be in check!" << std::endl;
+                if(!test_move(piece, index_to_square(row, col), movesquare)) {
                     return false;
                 }
 
-                //If the previous test passes, replaces the piece.
-                board[row][col] = piece;
-                board[testrow][testcol] = stored_piece;
-
-                //If the current king is not in check, makes the move.
-                move_piece(board, index_to_square(row, col), movesquare);
+                //If the tests pass, makes the move.
+                move_piece(index_to_square(row, col), movesquare);
                 
                 // std::cout << "Valid move!" << std::endl;
                 
@@ -806,12 +826,10 @@ int main() {
     bool game_running = true;
     bool current_color = true;
 
-    std::string chessboard[8][8];
-
-    initializeboard(chessboard);
+    initializeboard();
 
     while(game_running) {
-        request_move(chessboard, current_color);
+        request_move(current_color);
     }
 
     return 0;
