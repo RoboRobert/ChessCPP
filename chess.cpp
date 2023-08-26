@@ -143,6 +143,8 @@ void random_bot() {
     std::string possible_moves[128] = {""};
     color_legal_moves(board, possible_moves, state_color);
 
+    if(possible_moves[0] == "")
+        return;
     for(index = 0; index < 128; index++) {
         if(possible_moves[index] == "") {
             break;
@@ -151,9 +153,16 @@ void random_bot() {
     randomIndex = rand()%index; 
 
     square_to_index(possible_moves[randomIndex].substr(0,2), row, col);
-    std::cout << "I played " << board[row][col] << " to " << possible_moves[randomIndex].substr(2,2) << std::endl;
+    std::cout << "BOT: I played " << board[row][col] << " to " << possible_moves[randomIndex].substr(2,2) << std::endl;
 
     move_piece(board, possible_moves[randomIndex].substr(0,2), possible_moves[randomIndex].substr(2,2), false);
+
+    if(en_passant_reset_timer > 1)
+        en_passant_reset_timer--;
+    if(en_passant_reset_timer == 1) {
+        en_passantable_pawn = "";
+        en_passant_reset_timer = 0;
+    }
 
     return;
 }
@@ -169,6 +178,12 @@ void color_legal_moves(std::string board[8][8], std::string *legal_moves, char c
 
     color_simple_moves(board, potential_moves, color);
 
+    for(int j = 0; j < 256; j++) {
+        if(legal_moves[j] == "")
+            break;
+        legal_moves[j] = "";
+    }
+
     for(int i = 0; i < 256; i++) {
         if(potential_moves[i] == "") {
             break;
@@ -182,6 +197,8 @@ void color_legal_moves(std::string board[8][8], std::string *legal_moves, char c
             legal_index++;
         }
     }
+
+    return;
 }
 
 void color_simple_moves(std::string board[8][8], std::string *movelist, char color) {
@@ -832,13 +849,11 @@ bool test_move(std::string piece, std::string from_square, std::string to_square
         return false;
     }
 
-    //If the previous test passes, restores the board
-
     return true;
 }
 
 bool make_move(std::string move, char color) {
-    int index = 0;
+    int row, col, index = 0;
 
     std::string piece = "";
     std::string movesquare = "  ";
@@ -847,70 +862,31 @@ bool make_move(std::string move, char color) {
         std::cout << "Invalid move! Please use proper chess notation!" << std::endl;
         return false;
     }
-        
-    int row = 0;
-    int col = -1;
-    bool move_found = false;
-    while(!move_found) {
-        col = col + 1;
-        if(col == 8) {
-            col = 0;
-            row++;
-        }
-        for(row = row; row < 8; row++) {
-            while(col < 7) {
-                // std::cout << "Row: " << row << " Col: " << col << std::endl;
-                if(board[row][col] == piece) {
-                    break;
-                }
-                col++;
+
+    //Stores all the legal moves for the current color.
+    std::string legal_moves[128] = {""};
+    color_legal_moves(board, legal_moves, piece.at(0));
+
+    if(legal_moves[0] == "")
+        return false;
+
+    for(int i = 0; i < 128; i++) {
+        if(legal_moves[i] == "")
+            break;
+        square_to_index(legal_moves[i].substr(0,2), row, col);
+        if(legal_moves[i].substr(2,2) == movesquare && board[row][col] == piece) {
+            move_piece(board, legal_moves[i].substr(0,2), movesquare, false);
+
+            //If it is a valid move, moves the en passant rolling window.
+            if(en_passant_reset_timer > 1)
+                en_passant_reset_timer--;
+            if(en_passant_reset_timer == 1) {
+                en_passantable_pawn = "";
+                en_passant_reset_timer = 0;
             }
-            // std::cout << "Row: " << row << " Col: " << col << std::endl;
-            if(board[row][col] == piece) {
-                break;
-            }
-            col = 0;
-        }
-
-        // std::cout << "Row: " << row << " Col: " << col << std::endl;
-
-        if(row >= 8 || col >= 8) {
-            std::cout << "Invalid move!" << std::endl;
-            return false;
-        }
-
-        //Stores a list of legal moves in movelist
-        index = 0;
-        std::string movelist[64] = {""};
-        piece_simple_moves(board, movelist, index, row, col, piece);
-
-        for(int i = 0; i < 64; i++) {
-            if(movelist[i] == "")
-                break;
-            if(movelist[i].substr(2,2) == movesquare) {
-                if(!test_move(piece, index_to_square(row, col), movesquare)) {
-                    return false;
-                }
-
-                //If the tests pass, makes the move.
-                move_piece(board, index_to_square(row, col), movesquare, false);
-                
-                // std::cout << "Valid move!" << std::endl;
-
-                //If it is a valid move, moves the en passant rolling window.
-                if(en_passant_reset_timer > 1)
-                    en_passant_reset_timer--;
-                if(en_passant_reset_timer == 1) {
-                    en_passantable_pawn = "";
-                    en_passant_reset_timer = 0;
-                }
-                
-                move_found = true;
-                return true;
-            }
+            return true;
         }
     }
-
     std::cout << "Invalid move!" << std::endl;
     return false;
 }
@@ -942,23 +918,18 @@ int main() {
             random_bot();
         }
 
-        //Resets the legal moves list before refreshing it.
-        for(int i = 0; i < 128; i++) {
-            if(legal_moves[i] == "") {
-                break;
-            }
-            legal_moves[i] = "";
-        }
         color_legal_moves(board, legal_moves, state_color);
         
         if(legal_moves[0] == "" && king_in_check(board, state_color)) {
             game_running = false;
+            print_board();
             std::cout << "The game ended with " << state_opponent << " checkmating the " << state_color << " king." << std::endl;
 
             goto GAMEOVER;
         }
         if(legal_moves[0] == "" && !king_in_check(board, state_color)) {
             game_running = false;
+            print_board();
             std::cout << "Stalemate!" << std::endl;
 
             goto GAMEOVER;
