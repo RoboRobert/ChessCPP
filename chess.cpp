@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include<cmath>
 
+std::string strtolower(std::string input_string);
 void initializeboard();
 void print_board();
 void square_to_index(std::string square, int &row, int &col);
@@ -30,8 +31,23 @@ int en_passant_reset_timer = 1;
 char state_color = 'W';
 char state_opponent = 'B';
 
+//Castling rights, short and long
 bool white_castling_rights[2] = {true, true};
+//Castling rights, short and long
 bool black_castling_rights[2] = {true, true};
+
+
+std::string strtolower(std::string input_string) {
+    std::string output_string = input_string;
+
+    for(int i = 0; i < input_string.length(); i++) {
+        if(isalpha(input_string.at(i))) {
+            output_string.at(i) = tolower(input_string.at(i));
+        }
+    }
+
+    return output_string;
+}
 
 void initializeboard() {
     //Black rooks
@@ -140,12 +156,12 @@ void random_bot() {
     int row, col;
     int randomIndex;
 
-    std::string possible_moves[128] = {""};
+    std::string possible_moves[256] = {""};
     color_legal_moves(board, possible_moves, state_color);
 
     if(possible_moves[0] == "")
         return;
-    for(index = 0; index < 128; index++) {
+    for(index = 0; index < 256; index++) {
         if(possible_moves[index] == "") {
             break;
         }
@@ -641,6 +657,38 @@ void piece_simple_moves(std::string board[8][8], std::string *movelist, int &ind
             }
         }
 
+        //Short castling for white
+        if(color == 'W' && white_castling_rights[0]) {
+            if(board[row][col + 1] == "[]" && board[row][col + 2] == "[]") {
+                movelist[index].append(index_to_square(row, col)).append(index_to_square(row, col+2));
+                index++;
+            }
+        }
+
+        //Long castling for white
+        if(color == 'W' && white_castling_rights[1]) {
+            if(board[row][col - 1] == "[]" && board[row][col - 2] == "[]" && board[row][col - 3] == "[]") {
+                movelist[index].append(index_to_square(row, col)).append(index_to_square(row, col-2));
+                index++;
+            }
+        }
+
+        //Short castling for black
+        if(color == 'B' && black_castling_rights[0]) {
+            if(board[row][col + 1] == "[]" && board[row][col + 2] == "[]") {
+                movelist[index].append(index_to_square(row, col)).append(index_to_square(row, col+2));
+                index++;
+            }
+        }
+
+        //Long castling for black
+        if(color == 'B' && black_castling_rights[1]) {
+            if(board[row][col - 1] == "[]" && board[row][col - 2] == "[]" && board[row][col - 3] == "[]") {
+                movelist[index].append(index_to_square(row, col)).append(index_to_square(row, col-2));
+                index++;
+            }
+        }
+
         return;
     }
 
@@ -774,13 +822,10 @@ void move_piece(std::string board[8][8], std::string start_square, std::string e
     square_to_index(start_square, row1, col1);
     square_to_index(end_square, row2, col2);
 
-
     //When moving a pawn two squares up, makes it eligible for en passant
-    if(test == false) {
-        if(board[row1][col1].at(1) == 'P' && abs(row2 - row1) == 2) {
-            en_passantable_pawn = index_to_square(row2, col1);
-            en_passant_reset_timer = 3;
-        }
+    if(test == false && board[row1][col1].at(1) == 'P' && abs(row2 - row1) == 2) {
+        en_passantable_pawn = index_to_square(row2, col1);
+        en_passant_reset_timer = 3;
     }
 
     //If the move is en passant, removes the en-passanted pawn.
@@ -798,8 +843,47 @@ void move_piece(std::string board[8][8], std::string start_square, std::string e
         
     }
 
+    //Removes castling rights if the king is moved.
+    if(test==false && board[row1][col1] == "WK" ) {
+        white_castling_rights[0] = false;
+        white_castling_rights[1] = false;
+    }
+    if(test==false && board[row1][col1] == "BK") {
+        black_castling_rights[0] = false;
+        black_castling_rights[1] = false;
+    }
+
+    //Removes castling rights on each side per rook moved
+    //White
+    if(test==false && board[row1][col1] == "WR" && (index_to_square(row1, col1) == "H1")) {
+        white_castling_rights[0] = false;
+    }
+    if(test==false && board[row1][col1] == "WR" && (index_to_square(row1, col1) == "A1")) {
+        white_castling_rights[1] = false;
+    }
+
+    //Black
+    if(test==false && board[row1][col1] == "BR" && (index_to_square(row1, col1) == "H8")) {
+        black_castling_rights[0] = false;
+    }
+    if(test==false && board[row1][col1] == "BR" && (index_to_square(row1, col1) == "A8")) {
+        black_castling_rights[1] = false;
+    }
+
     board[row2][col2] = board[row1][col1];
     board[row1][col1] = "[]";
+
+    //Short castling
+    if(test==false && board[row2][col2].at(1) == 'K' &&  (col2 - col1 == 2)) {
+        board[row2][col2 - 1] = board[row2][col2 + 1];
+        board[row2][col2 + 1] = "[]";
+    }
+
+    //Long castling
+    if(test==false && board[row2][col2].at(1) == 'K' && (col2 - col1 == -2)) {
+        board[row2][col2 + 1] =  board[row2][col2 - 2];
+        board[row2][col2 - 2] = "[]";
+    }
 
     if((row2 == 7 || row2 == 0) && board[row2][col2].at(1) == 'P') {
         board[row2][col2].at(1) = 'Q';
@@ -820,21 +904,62 @@ bool parse_move(std::string move, char color, std::string &piece, std::string &m
     piece = "  ";
     piece.at(0) = color;
 
+     if(white_castling_rights[0] && strtolower(move) == "o-o" && color == 'W') {
+        piece.at(1) = 'K';
+        move_square = "G1"; 
+
+        return true;
+    }
+
+    if(white_castling_rights[1] && strtolower(move) == "o-o-o" && color == 'W') {
+        piece.at(1) = 'K';
+        move_square = "C1"; 
+
+        return true;
+    }
+
+    if(black_castling_rights[0] && strtolower(move) == "o-o" && color == 'B') {
+        piece.at(1) = 'K';
+        move_square = "G8";
+
+        return true;
+    }
+
+    if(black_castling_rights[1] && strtolower(move) == "o-o-o" && color == 'B') {
+        piece.at(1) = 'K';
+        move_square = "C8";
+
+        return true;
+    }
+
     if(isdigit(move.at(1))) {
         piece.at(1) = 'P';
         move_square.at(0) = toupper(move.at(0));
         move_square.at(1) = move.at(1);
+
+        return true;
     }
     else {
         piece.at(1) = toupper(move.at(0));
         move_square.at(0) = toupper(move.at(1));
         move_square.at(1) = move.at(2);
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 bool test_move(std::string piece, std::string from_square, std::string to_square) {
+    int row1, col1, row2, col2;
+    bool castling = false;
+
+    square_to_index(from_square, row1, col1);
+    square_to_index(to_square, row2, col2);
+
+    if(board[row1][col1].at(1) == 'K' && abs(col2 - col1) == 2)
+        castling = true;
+
     char color = piece.at(0);
 
     for(int i = 0; i < 8; i++) {
@@ -843,10 +968,29 @@ bool test_move(std::string piece, std::string from_square, std::string to_square
         }
     }
 
+    //Stops castling out of check.
+    if(castling && king_in_check(test_board, color))
+        return false;
+
     move_piece(test_board, from_square, to_square, true);
     if(king_in_check(test_board, color)) {
         // std::cout << "Invalid move because the " << color  << " king would be in check!" << std::endl;
         return false;
+    }
+
+    //Checks if the squares moved through are attacked when castling:
+    if(castling && col2 - col1 == 2) {
+        move_piece(test_board, index_to_square(row2, col2), index_to_square(row1, col2 - 1), true);
+        if(king_in_check(test_board, color)) {
+            return false;
+        }
+    }
+
+    if(castling && col2 - col1 == -2) {
+        move_piece(test_board, index_to_square(row2, col2), index_to_square(row1, col2 + 1), true);
+        if(king_in_check(test_board, color)) {
+            return false;
+        }
     }
 
     return true;
@@ -864,13 +1008,13 @@ bool make_move(std::string move, char color) {
     }
 
     //Stores all the legal moves for the current color.
-    std::string legal_moves[128] = {""};
+    std::string legal_moves[256] = {""};
     color_legal_moves(board, legal_moves, piece.at(0));
 
     if(legal_moves[0] == "")
         return false;
 
-    for(int i = 0; i < 128; i++) {
+    for(int i = 0; i < 256; i++) {
         if(legal_moves[i] == "")
             break;
         square_to_index(legal_moves[i].substr(0,2), row, col);
@@ -902,21 +1046,22 @@ int main() {
 
     initializeboard();
 
-    std::string legal_moves[128] = {""};
+    std::string legal_moves[256] = {""};
 
     while(game_running) {
         if(current_color == true) {
             state_color = 'W';
             state_opponent = 'B';
 
-            // std::cout << "Colors: " << state_color << state_opponent << std::endl;
-            request_move();
+            // request_move();
         }
         else {
             state_color = 'B';
             state_opponent = 'W';
-            random_bot();
+            // random_bot();
         }
+
+        request_move();
 
         color_legal_moves(board, legal_moves, state_color);
         
@@ -924,20 +1069,15 @@ int main() {
             game_running = false;
             print_board();
             std::cout << "The game ended with " << state_opponent << " checkmating the " << state_color << " king." << std::endl;
-
-            goto GAMEOVER;
         }
         if(legal_moves[0] == "" && !king_in_check(board, state_color)) {
             game_running = false;
             print_board();
             std::cout << "Stalemate!" << std::endl;
-
-            goto GAMEOVER;
         }
 
         current_color = !current_color;
     }
-    GAMEOVER:
 
     return 0;
 }
