@@ -933,6 +933,8 @@ bool parse_move(std::string move, char color, std::string &piece, std::string &m
     }
 
     if(isdigit(move.at(1))) {
+        if((move.at(1) < '1') || (move.at(1) > '8') || (tolower(move.at(0)) > 'h') || (tolower(move.at(0)) < 'a')) 
+            return false;
         piece.at(1) = 'P';
         move_square.at(0) = toupper(move.at(0));
         move_square.at(1) = move.at(1);
@@ -940,6 +942,8 @@ bool parse_move(std::string move, char color, std::string &piece, std::string &m
         return true;
     }
     else {
+        if((move.at(2) < '1') || (move.at(2) > '8') || (tolower(move.at(1)) > 'h') || (tolower(move.at(1)) < 'a'))
+            return false;
         piece.at(1) = toupper(move.at(0));
         move_square.at(0) = toupper(move.at(1));
         move_square.at(1) = move.at(2);
@@ -1053,15 +1057,15 @@ int main() {
             state_color = 'W';
             state_opponent = 'B';
 
-            // request_move();
+            request_move();
         }
         else {
             state_color = 'B';
             state_opponent = 'W';
-            // random_bot();
+            random_bot();
         }
 
-        request_move();
+        // request_move();
 
         color_legal_moves(board, legal_moves, state_color);
         
